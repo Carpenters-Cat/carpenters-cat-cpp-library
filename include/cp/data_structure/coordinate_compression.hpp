@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cstddef>
 #include <optional>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -34,7 +35,7 @@ public:
         return rank;
     }
     [[nodiscard]] bool contains(const T& value) const { return index(value).has_value(); }
-    [[nodiscard]] const T& value(std::size_t rank) const {
+    [[nodiscard]] std::conditional_t<std::is_same_v<T, bool>, bool, const T&> value(std::size_t rank) const {
         assert(rank < size());
         return values_[rank];
     }

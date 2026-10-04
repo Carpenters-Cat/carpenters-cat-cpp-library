@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <limits>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 struct OrderedOnly {
@@ -35,4 +36,11 @@ int main() {
     assert(words.size() == 3 && words.index("cat") == 1 && !words.contains("dog"));
     cp::CoordinateCompression<OrderedOnly> ordered({{2}, {1}, {2}});
     assert(ordered.size() == 2 && ordered.index({2}) == 1);
+    cp::CoordinateCompression<bool> bits({true, false, true, false});
+    static_assert(std::is_same_v<decltype(bits.value(0)), bool>);
+    static_assert(std::is_same_v<decltype(c.value(0)), const long long&>);
+    assert(bits.size() == 2 && !bits.value(0) && bits.value(1));
+    assert(bits.index(false) == 0 && bits.index(true) == 1);
+    assert(bits.lower_bound(false) == 0 && bits.upper_bound(false) == 1);
+    assert(bits.lower_bound(true) == 1 && bits.upper_bound(true) == 2);
 }
