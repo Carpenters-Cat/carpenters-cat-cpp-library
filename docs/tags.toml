@@ -1,0 +1,7 @@
+tags = [
+  "graph", "graph/connectivity", "graph/shortest-path", "graph/flow",
+  "data-structure", "data-structure/union-find", "data-structure/range-query",
+  "math", "math/number-theory", "string", "geometry", "dp", "optimization",
+  "randomized", "mistake", "mistake/overflow", "mistake/off-by-one",
+  "mistake/complexity", "mistake/wrong-invariant",
+]

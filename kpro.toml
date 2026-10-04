@@ -1,0 +1,32 @@
+[project]
+library_include_root = "include"
+contest_root = "contests"
+docs_root = "docs"
+verify_root = "verify"
+
+[cpp]
+compiler = "g++"
+standard = "c++23"
+compile_flags = ["-O2", "-Wall", "-Wextra", "-Wpedantic"]
+include_flags = ["-Iinclude"]
+
+[docs]
+engine = "zensical"
+host = "127.0.0.1"
+port = 8000
+
+[verify]
+backend = "competitive-verifier"
+timeout = 30
+
+[judge]
+backend = "oj-ng"
+
+[contest]
+base_branch = "main"
+disable_push = true
+record_snapshot_tag = true
+
+[bundle]
+library_prefix = "cp/"
+emit_provenance_comment = true

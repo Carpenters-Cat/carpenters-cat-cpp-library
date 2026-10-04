@@ -1,0 +1,10 @@
+.venv/
+.kpro/
+build/
+site/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.competitive-verifier/cache/
+.DS_Store

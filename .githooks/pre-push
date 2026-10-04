@@ -1,0 +1,19 @@
+#!/bin/sh
+# Independent of Python and installed dependencies: guard works during outages.
+lock=$(git rev-parse --git-path kpro/contest-lock.toml) || exit 1
+if [ -f "$lock" ]; then
+    while IFS= read -r line; do
+        case "$line" in
+            'disable_push = false') exit 0 ;;
+        esac
+    done < "$lock"
+    if [ "${KPRO_ALLOW_PUSH:-}" = "1" ]; then
+        echo 'WARNING: KPRO_ALLOW_PUSH=1 overrides the active contest push lock.' >&2
+        exit 0
+    fi
+    echo 'ERROR: kpro contest mode is active.' >&2
+    cat "$lock" >&2
+    echo 'Push is disabled. Run `kpro contest end` after the contest.' >&2
+    exit 1
+fi
+exit 0

@@ -1,0 +1,14 @@
+[project]
+site_name = "Carpenter's Cat C++ Library"
+site_description = "競技プログラミングのライブラリとノート"
+docs_dir = ".kpro/docs/source"
+site_dir = ".kpro/docs/site"
+dev_addr = "127.0.0.1:8000"
+
+[project.theme]
+language = "ja"
+features = ["content.code.copy", "navigation.sections", "navigation.indexes"]
+
+[project.markdown_extensions]
+"pymdownx.highlight" = { anchor_linenums = true }
+"pymdownx.superfences" = {}
