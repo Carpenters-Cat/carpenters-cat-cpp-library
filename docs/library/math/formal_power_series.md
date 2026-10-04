@@ -123,6 +123,11 @@ int main() {
     assert(q == F({1,2}) && r.empty());
     auto values = cp::multipoint_evaluate(f, std::vector<M>{0,1,2});
     assert(cp::interpolate(std::vector<M>{0,1,2}, values) == f);
+    F square = F{1,1}.pow(2,3);
+    assert(square == F({1,2,1}));
+    auto root = square.sqrt(3);
+    assert(root && (*root * *root).truncated(3) == square);
+    assert(f.taylor_shift(2) == F({17,14,3}));
 }
 ```
 
