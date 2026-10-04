@@ -47,13 +47,14 @@ verification:
 | `c.contains(x)` | `x` と同値の値が登録されているか |
 | `c.lower_bound(x)` | `x` 未満の異なる値の数。未登録の値にも使用可能 |
 | `c.upper_bound(x)` | `x` 以下の異なる値の数。未登録の値にも使用可能 |
-| `c.value(rank)` | 圧縮前の値への `const T&`。不正な添字は assert で検出 |
+| `c.value(rank)` | 圧縮前の値。通常は `const T&`、`bool` は値を返す。不正な添字は assert で検出 |
 | `c.values()` | 昇順に並んだ全座標への `const std::vector<T>&` |
 
 `index`・`contains` の同値性は `!(a < b) && !(b < a)` です。
 `operator==` は必要ありません。比較上同値でも表現が異なる値がある場合、
 `value` はその同値類の代表値を返します。整数・文字列では元の値をそのまま復元します。
-返された参照はオブジェクトの破棄・代入まで有効です。`NDEBUG` 時も `value` の前提を守ってください。
+`bool` の座標は値を返し、その他の型の参照はオブジェクトの破棄・代入まで有効です。
+`NDEBUG` 時も `value` の前提を守ってください。
 境界検索は最後の値より大きい入力では `size()` を返します。
 
 ## Examples
