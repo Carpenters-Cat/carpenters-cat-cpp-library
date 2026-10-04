@@ -59,3 +59,16 @@ integration tests create and commit isolated temporary repositories instead.
 Real judge submission requires the user's authenticated session and is not
 performed by the implementation acceptance test. Submission gates are tested
 with a fake JudgeBackend; online library verification uses public test data.
+
+## Potential and rollback Union-Find
+
+The existing UnionFind remains the implementation for ordinary connectivity.
+PotentialUnionFind needs weighted path compression to preserve additive
+relations; RollbackUnionFind instead forbids compression and records successful
+merges. Their separate headers implement these different invariants without
+introducing a second ordinary connectivity implementation. Potential merges
+reject contradictory constraints and return an explicit three-state result.
+Rollback snapshots count successful merges; failed merges do not enter history.
+Snapshots discarded by rollback are invalid even if a later branch reaches the
+same numeric history length. Persistent Unionfind verification traverses the
+version tree offline; the public rollback API does not claim online persistence.
