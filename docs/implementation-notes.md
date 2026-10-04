@@ -50,16 +50,6 @@ a normal local tag, not a cryptographic attestation.
 The CLI does not create commits in the user's repository. Contest lifecycle
 integration tests create and commit isolated temporary repositories instead.
 
-## Third-party references
-
-- [competitive-verifier attributes and CLI](https://competitive-verifier.github.io/competitive-verifier/document.html)
-- [Zensical configuration](https://zensical.org/docs/setup/basics/)
-- [online-judge-tools-ng](https://pypi.org/project/online-judge-tools-ng/)
-
-Real judge submission requires the user's authenticated session and is not
-performed by the implementation acceptance test. Submission gates are tested
-with a fake JudgeBackend; online library verification uses public test data.
-
 ## Shortest-path distance arithmetic
 
 The shortest-path entries use GCC/Clang's `__int128_t` for temporary integer
@@ -71,3 +61,13 @@ clipped or treated as unreachable. Bellman–Ford uses synchronous relaxation to
 bound temporary walk lengths. Floyd skips pivots with negative diagonal values
 and classifies affected pairs using full-graph reachability, preventing negative
 cycles from causing arithmetic blowup while preserving every finite result.
+
+## Third-party references
+
+- [competitive-verifier attributes and CLI](https://competitive-verifier.github.io/competitive-verifier/document.html)
+- [Zensical configuration](https://zensical.org/docs/setup/basics/)
+- [online-judge-tools-ng](https://pypi.org/project/online-judge-tools-ng/)
+
+Real judge submission requires the user's authenticated session and is not
+performed by the implementation acceptance test. Submission gates are tested
+with a fake JudgeBackend; online library verification uses public test data.
