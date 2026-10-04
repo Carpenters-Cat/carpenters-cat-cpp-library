@@ -19,7 +19,8 @@ requires:
 complexity:
   multiply: m*k と k*n の積に O(mkn)、メモリ O(mn)
   pow: n*n の行列で O(n^3 log exponent)
-  gauss_jordan/rank/solve: m*n の行列で O(mn min(m,n))
+  gauss_jordan/rank: m*n の行列で O(mn min(m,n))
+  solve: O(m(n+1)(min(m,n)+1) + n(n-rank) + n)、基底の出力を含む
   determinant/inverse: O(n^3)
   memory: 掃き出しと解に O(mn+n^2)
 pitfalls:
@@ -74,6 +75,10 @@ verification:
 任意のスカラー倍を加えたものです。particular の自由変数は 0、各基底は一つの自由変数を
 1 にします。自由変数列は昇順、基底の数は n-rank です。方程式が 0 本なら全変数が自由、
 変数が 0 個なら右辺が全て 0 の場合だけ解があります。
+
+方程式を解く時間には拡大行列の構築・走査と掃き出しに加え、
+長さ n の基底を n-rank 本返す O(n(n-rank)) を含めます。
+行数 m=0 の場合も基底は n×n の単位行列に相当するため時間・出力領域は O(n²) です。
 
 ## Type and dimension contracts
 
