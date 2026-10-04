@@ -59,3 +59,13 @@ integration tests create and commit isolated temporary repositories instead.
 Real judge submission requires the user's authenticated session and is not
 performed by the implementation acceptance test. Submission gates are tested
 with a fake JudgeBackend; online library verification uses public test data.
+
+## ACL range structures
+
+The range structures are independent C++23 implementations with PascalCase
+public types and ACL-compatible `fenwick_tree`, `segtree` and `lazy_segtree`
+aliases. Method contracts, half-open intervals, boundary searches and lazy
+composition order follow ACL. Fenwick Tree additionally supports linear-time
+vector construction; all three expose `size()`. Segment Tree reads are const.
+Fenwick Tree supports standard integer types and user-defined additive groups;
+compiler-specific extended integer types are not part of its portable API.
