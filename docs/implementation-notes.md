@@ -59,3 +59,15 @@ integration tests create and commit isolated temporary repositories instead.
 Real judge submission requires the user's authenticated session and is not
 performed by the implementation acceptance test. Submission gates are tested
 with a fake JudgeBackend; online library verification uses public test data.
+
+## Shortest-path distance arithmetic
+
+The shortest-path entries use GCC/Clang's `__int128_t` for temporary integer
+distances. This compiler extension is supported on the specified macOS/Linux
+targets; public weights and finite results remain `std::int64_t`.
+Unreachable and negative-cycle-affected states are separate from numeric values,
+and an out-of-range finite result raises `std::overflow_error` rather than being
+clipped or treated as unreachable. Bellman–Ford uses synchronous relaxation to
+bound temporary walk lengths. Floyd skips pivots with negative diagonal values
+and classifies affected pairs using full-graph reachability, preventing negative
+cycles from causing arithmetic blowup while preserving every finite result.
