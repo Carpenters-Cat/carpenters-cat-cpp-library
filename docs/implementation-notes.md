@@ -41,6 +41,18 @@ initial commit), dirty state, UTC timestamp, backend and individual check result
 Fingerprints include all library headers, relevant tests/docs, tooling and uv.lock.
 This deliberately invalidates conservatively rather than showing stale success.
 
+## Static and persistent range queries
+
+SparseTable accepts an associative idempotent semigroup without requiring an
+identity; its half-open empty query returns nullopt. WaveletMatrix reuses
+CoordinateCompression to support negative and generic ordered values, and stores
+rank bitvectors in 64-bit blocks with popcount prefixes. Its kth query uses
+zero-based k and returns nullopt outside the interval's order-statistic range.
+PersistentSegmentTree retains immutable roots and path-copies point updates;
+identity-only initial versions use a shared implicit identity subtree. Version
+branching is verified against copied arrays locally, while online range-composite
+verification exercises the current version and noncommutative operand order.
+
 ## Git setup
 
 Install the versioned push guard with `git config core.hooksPath .githooks`.
