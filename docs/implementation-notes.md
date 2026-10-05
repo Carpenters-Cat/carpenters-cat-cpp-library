@@ -1,5 +1,18 @@
 # Implementation decisions (MVP)
 
+## Potential and rollback Union-Find
+
+The existing UnionFind remains the implementation for ordinary connectivity.
+PotentialUnionFind needs weighted path compression to preserve additive
+relations; RollbackUnionFind instead forbids compression and records successful
+merges. Their separate headers implement these different invariants without
+introducing a second ordinary connectivity implementation. Potential merges
+reject contradictory constraints and return an explicit three-state result.
+Rollback snapshots count successful merges; failed merges do not enter history.
+Snapshots discarded by rollback are invalid even if a later branch reaches the
+same numeric history length. Persistent Unionfind verification traverses the
+version tree offline; the public rollback API does not claim online persistence.
+
 ## Verification adapter
 
 Unit/stress tests run locally with the configured C++ compiler and timeout.
