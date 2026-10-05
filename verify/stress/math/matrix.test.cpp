@@ -5,12 +5,14 @@
 #include <numeric>
 #include <random>
 #include <set>
+#include <type_traits>
 struct NonzeroDefaultField : cp::StaticModint<5> {
     using Base = cp::StaticModint<5>;
     NonzeroDefaultField() : Base(1) {}
-    NonzeroDefaultField(int value) : Base(value) {}
+    explicit NonzeroDefaultField(int value) : Base(value) {}
     NonzeroDefaultField(Base value) : Base(value) {}
 };
+static_assert(!std::is_convertible_v<int, NonzeroDefaultField>);
 using M = cp::modint998244353;
 using A = cp::Matrix<M>;
 M naive_det(const A &a) {
@@ -65,9 +67,9 @@ int main() {
         B a(rows, cols);
         std::vector<F> b(rows);
         for (int i = 0; i < rows; i++) {
-            b[i] = rng() % 5;
+            b[i] = F(rng() % 5);
             for (int j = 0; j < cols; j++)
-                a(i, j) = rng() % 5;
+                a(i, j) = F(rng() % 5);
         }
         int assignments = 1;
         for (int i = 0; i < cols; i++)
@@ -77,12 +79,12 @@ int main() {
             int value = mask;
             std::vector<F> x(cols);
             for (auto &v : x) {
-                v = value % 5;
+                v = F(value % 5);
                 value /= 5;
             }
             bool good = true;
             for (int i = 0; i < rows; i++) {
-                F sum = 0;
+                F sum = F(0);
                 for (int j = 0; j < cols; j++)
                     sum += a(i, j) * x[j];
                 good &= sum == b[i];
@@ -97,12 +99,12 @@ int main() {
                 count *= 5;
             assert(count == solutions);
             for (int i = 0; i < rows; i++) {
-                F sum = 0;
+                F sum = F(0);
                 for (int j = 0; j < cols; j++)
                     sum += a(i, j) * result->particular[j];
                 assert(sum == b[i]);
                 for (const auto &v : result->basis) {
-                    F zero = 0;
+                    F zero = F(0);
                     for (int j = 0; j < cols; j++)
                         zero += a(i, j) * v[j];
                     assert(zero == F(0));
@@ -117,7 +119,7 @@ int main() {
             int value = mask;
             std::vector<F> v(cols, F(0));
             for (int i = 0; i < rows; i++) {
-                F c = value % 5;
+                F c = F(value % 5);
                 value /= 5;
                 for (int j = 0; j < cols; j++)
                     v[j] += c * a(i, j);

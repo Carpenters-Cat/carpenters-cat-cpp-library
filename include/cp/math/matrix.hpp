@@ -117,7 +117,7 @@ template <class T> int matrix_rank(const Matrix<T> &a) {
 }
 template <class T> T determinant(Matrix<T> a) {
     assert(a.rows() == a.columns());
-    T result = 1;
+    T result = T(1);
     for (int c = 0; c < a.rows(); ++c) {
         int pivot = c;
         while (pivot < a.rows() && a(pivot, c) == T(0))
@@ -136,7 +136,7 @@ template <class T> T determinant(Matrix<T> a) {
             T factor = a(i, c) * inv;
             for (int j = c + 1; j < a.columns(); ++j)
                 a(i, j) -= factor * a(c, j);
-            a(i, c) = 0;
+            a(i, c) = T(0);
         }
     }
     return result;
@@ -149,7 +149,7 @@ template <class T> std::optional<Matrix<T>> inverse(const Matrix<T> &a) {
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j)
             augmented(i, j) = a(i, j);
-        augmented(i, n + i) = 1;
+        augmented(i, n + i) = T(1);
     }
     auto [reduced, pivots] = gauss_jordan(std::move(augmented), n);
     if (static_cast<int>(pivots.size()) != n)
@@ -195,7 +195,7 @@ std::optional<LinearSystemSolution<T>> solve_linear_system(const Matrix<T> &a,
         if (!is_pivot[c]) {
             result.free_columns.push_back(c);
             std::vector<T> v(n, T(0));
-            v[c] = 1;
+            v[c] = T(1);
             for (int i = 0; i < rank; ++i)
                 v[pivots[i]] = -reduced(i, c);
             result.basis.push_back(std::move(v));
