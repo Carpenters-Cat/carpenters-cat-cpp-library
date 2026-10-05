@@ -14,6 +14,16 @@ Stable metadata must name at least one real verification test. All configured
 tests must pass; an unavailable online backend is a failure, never a skipped pass.
 Online verification runs downloaded judge tests locally; it does not submit code.
 
+## FIFO aggregation and line envelopes
+
+SWAG maintains FIFO operand order using two aggregate stacks; empty pop is a
+no-op returning false. LiChaoTree uses CoordinateCompression for a discrete,
+fixed integer query domain. Segment insertions use half-open coordinate bounds,
+and min/max are selected by comparison direction rather than coefficient
+negation. Unregistered coordinates and uncovered queries return nullopt. All
+intermediate line evaluations must be exact in the caller-selected value type;
+the library does not saturate or silently ignore integer overflow.
+
 ## Snapshot compilation
 
 The bundler handles single-line literal `#include <cp/...>` / quoted `cp/...`
