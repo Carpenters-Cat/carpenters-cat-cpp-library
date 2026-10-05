@@ -1,0 +1,14 @@
+// competitive-verifier: PROBLEM https://judge.yosupo.jp/problem/primality_test
+#include <cp/math/primality.hpp>
+#include <iostream>
+int main() {
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+    int q;
+    std::cin >> q;
+    while (q--) {
+        std::uint64_t n;
+        std::cin >> n;
+        std::cout << (cp::is_prime_u64(n) ? "Yes" : "No") << '\n';
+    }
+}
