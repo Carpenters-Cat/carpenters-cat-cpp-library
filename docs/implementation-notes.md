@@ -50,6 +50,18 @@ a normal local tag, not a cryptographic attestation.
 The CLI does not create commits in the user's repository. Contest lifecycle
 integration tests create and commit isolated temporary repositories instead.
 
+## Shortest-path distance arithmetic
+
+The shortest-path entries use GCC/Clang's `__int128_t` for temporary integer
+distances. This compiler extension is supported on the specified macOS/Linux
+targets; public weights and finite results remain `std::int64_t`.
+Unreachable and negative-cycle-affected states are separate from numeric values,
+and an out-of-range finite result raises `std::overflow_error` rather than being
+clipped or treated as unreachable. Bellman–Ford uses synchronous relaxation to
+bound temporary walk lengths. Floyd skips pivots with negative diagonal values
+and classifies affected pairs using full-graph reachability, preventing negative
+cycles from causing arithmetic blowup while preserving every finite result.
+
 ## Third-party references
 
 - [competitive-verifier attributes and CLI](https://competitive-verifier.github.io/competitive-verifier/document.html)
