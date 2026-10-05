@@ -82,3 +82,21 @@ int main() {
 空集合、単一頂点、重複併合、成分一覧を単体テストで確認します。
 固定 seed の乱択テストでは、単純な成分ラベル管理との比較を行います。
 オンライン検証は Library Checker の Unionfind 問題の全テストケースをローカル実行します。
+
+## ACL DSU correspondence
+
+既存の `cp::UnionFind` が ACL の `atcoder::dsu` 相当の機能を提供します。
+同等の DSU を別途実装しません。
+
+| ACL | cp | 対応と注意点 |
+| --- | --- | --- |
+| `dsu(n)` | `UnionFind(n)` | n 頂点を構築、省略時は空 |
+| `leader(v)` | `leader(v)` | 同じ代表元機能 |
+| `same(a,b)` | `same(a,b)` | 同一成分判定 |
+| `size(v)` | `size(v)` | 成分サイズ |
+| `groups()` | `groups()` | 成分ごとの頂点列、成分間の順序は保証しない |
+| `merge(a,b) -> int` | `merge(a,b) -> bool` | cp は併合が新規かを返す。代表元が必要なら併合後 `leader(a)` |
+| なし | `components()` | cp 独自の O(1) 成分数取得 |
+
+両実装とも union by size と経路圧縮を用い、各操作は償却 O(α(n)) です。
+ACL に対応する全機能は既存の単体・乱択・Library Checker 検証の対象です。

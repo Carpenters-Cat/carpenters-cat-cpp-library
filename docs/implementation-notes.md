@@ -71,3 +71,31 @@ cycles from causing arithmetic blowup while preserving every finite result.
 Real judge submission requires the user's authenticated session and is not
 performed by the implementation acceptance test. Submission gates are tested
 with a fake JudgeBackend; online library verification uses public test data.
+
+## ACL range structures
+
+The range structures are independent C++23 implementations with PascalCase
+public types and ACL-compatible `fenwick_tree`, `segtree` and `lazy_segtree`
+aliases. Method contracts, half-open intervals, boundary searches and lazy
+composition order follow ACL. Fenwick Tree additionally supports linear-time
+vector construction; all three expose `size()`. Segment Tree reads are const.
+Fenwick Tree supports standard integer types and user-defined additive groups;
+compiler-specific extended integer types are not part of its portable API.
+
+## ACL math, graph and string integration
+
+Math, flow and SA-IS kernels adapt the CC0 ACL source at commit
+`864245a00b00dd008d1abfdc239618fdb7d139da`; retained licenses and exact source
+provenance are in `docs/third_party/acl-math.md` and `docs/acl-provenance.md`.
+Canonical code remains under `include/cp/`, with unconditional library includes.
+Math helpers use a dedicated namespace and header-defined non-template functions
+are inline for multiple translation units. Fixed/dynamic Modint retains ACL
+names and adds PascalCase aliases. Public graph classes use descriptive names.
+
+SCC uses iterative Kosaraju instead of ACL's recursive implementation, retaining
+topologically ordered components. TwoSat uses that shared SCC implementation.
+String inputs use unsigned-byte ordering and LCP of an empty input returns an
+empty vector. MinCostFlow explicitly asserts ACL's one-call flow/slope contract.
+Existing UnionFind supplies the DSU functionality; its boolean merge result and
+ACL representative-returning merge difference are documented without adding a
+duplicate DSU. `cp/utility/acl.hpp` is an umbrella include with a cross-library test.
