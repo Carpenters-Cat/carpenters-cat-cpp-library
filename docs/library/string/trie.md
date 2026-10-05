@@ -7,7 +7,8 @@ tags:
 aliases:
   - Prefix Tree
   - トライ木
-related: []
+related:
+  - string/aho_corasick
 verification:
   unit:
     - verify/unit/string/trie.test.cpp
@@ -23,6 +24,7 @@ verification:
 
 文字列の多重集合を接頭辞ごとに共有します。完全一致・接頭辞の有無と登録数を
 調べる辞書です。終端と経路を区別するため、ある単語が他の単語の接頭辞でも扱えます。
+Aho–Corasick はこの同じ Trie 表現を利用します。
 
 ## Preconditions / Pitfalls
 
