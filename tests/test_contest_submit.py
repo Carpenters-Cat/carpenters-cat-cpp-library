@@ -1,4 +1,7 @@
+import shutil
+
 import pytest
+from kpro.adapters.compiler import has_header
 from kpro.config import Config
 from kpro.contest import active, end, locate_problem, lock_path, start, validate_metadata
 from kpro.contest.runner import compile_problem, problem_data, submit
@@ -26,6 +29,63 @@ def test_start_end_records_snapshot_preserves_files(repository, judge):
     assert not lock_path(repository).exists()
     assert directory.exists()
     assert git(repository.root, "branch", "--show-current") == "contest/abc999"
+
+
+@pytest.mark.parametrize("bits_available", [False, True])
+def test_generated_main_aliases_bundle_and_compile(repository, judge, monkeypatch, bits_available):
+    fallback = repository.root / "include/cp/utility/template.hpp"
+    if bits_available:
+        # Supply bits on libc++ hosts too; the real compiler probe must find it.
+        search = repository.root / ".kpro/test-headers"
+        (search / "bits").mkdir(parents=True)
+        shutil.copy(fallback, search / "bits/stdc++.h")
+        repository = Config(
+            repository.root,
+            repository.values
+            | {
+                "cpp": repository.section("cpp")
+                | {"compile_flags": [*repository.section("cpp")["compile_flags"], f"-I{search}"]}
+            },
+        )
+        assert has_header(repository, "bits/stdc++.h")
+    else:
+        monkeypatch.setattr("kpro.contest.has_header", lambda *args: False)
+    state, directory = begin(repository, judge)
+    source = directory / "main.cpp"
+    text = source.read_text()
+    expected_header = "bits/stdc++.h" if bits_available else "cp/utility/template.hpp"
+    assert text.startswith(f"#include <{expected_header}>\n\n")
+    assert text.count("#include") == 1
+    # No using declarations live in the fallback header. Break the working-tree
+    # copy after start to exercise the immutable snapshot used for compilation.
+    assert "using " not in fallback.read_text()
+    write_text(fallback, "BROKEN WORKING TREE TEMPLATE\n")
+    write_text(
+        source,
+        text.replace(
+            "    return 0;",
+            """    vi integers{3, 1, 2};
+    ranges::sort(integers);
+    vvi rows{integers};
+    vll longs{10, 20};
+    vvll long_rows{longs};
+    pii index{0, 0};
+    pll sums{accumulate(rows[index.first].begin(), rows[index.first].end(), 0LL),
+             accumulate(long_rows[index.second].begin(), long_rows[index.second].end(), 0LL)};
+    ull mask = 7;
+    ld offset = 3.0L;
+    ll answer = sums.first + sums.second + popcount(mask) + static_cast<ll>(offset);
+    cout << answer << '\\n';
+    return 0;""",
+        ),
+    )
+    _, executable = compile_problem(repository, str(source))
+    run_samples(repository, executable, directory / "tests")
+    bundled = (directory / "build/submit.cpp").read_text()
+    assert "BROKEN WORKING TREE" not in bundled
+    if not bits_available:
+        assert f"commit: {state['base_commit']}" in bundled
+        assert "// begin cp/utility/template.hpp" in bundled
 
 
 def test_dirty_start_never_calls_judge(repository, judge):

@@ -64,6 +64,10 @@ def repository(tmp_path):
         root / "include/cp/graph/a.hpp",
         "#pragma once\n#include <cp/graph/b.hpp>\n#include <cp/graph/b.hpp>\n",
     )
+    (root / "include/cp/utility").mkdir()
+    shutil.copy(
+        PROJECT / "include/cp/utility/template.hpp", root / "include/cp/utility/template.hpp"
+    )
     git(root, "init", "-b", "main")
     git(root, "config", "user.name", "Test User")
     git(root, "config", "user.email", "test@example.invalid")

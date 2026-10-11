@@ -79,6 +79,12 @@ AtCoder・Codeforces・yukicoder の URL に対応しています。AtCoder は 
 ID 単独でも指定でき、他サイトは `codeforces:1234` / `yukicoder:1` と明示します。
 数字だけの指定はサイトを判別できないためエラーになります。
 
+生成される `main.cpp` は `<bits/stdc++.h>` を優先します。設定されたコンパイラで
+利用できない場合は、標準ヘッダーをまとめた `<cp/utility/template.hpp>` を使います。
+`using namespace std;` と `ll`、`ull`、`ld`、`pii`、`pll`、`vi`、`vll`、`vvi`、`vvll`
+の別名は、確認・編集しやすいよう `main.cpp` に直接置きます。
+このヘッダーも基準コミットから提出用ソースへ展開されます。
+
 | サイト | 問題一覧・サンプル取得 | 自動提出 | 内部 ID の例 |
 | --- | --- | --- | --- |
 | AtCoder | 対応 | 対応 | `abc350` |

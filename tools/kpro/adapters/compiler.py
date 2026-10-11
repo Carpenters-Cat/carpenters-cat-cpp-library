@@ -4,6 +4,27 @@ from kpro.config import Config
 from kpro.core import run
 
 
+def has_header(config: Config, header: str) -> bool:
+    """Probe using the same flags as standalone submission compilation."""
+    cpp = config.section("cpp")
+    result = run(
+        [
+            cpp["compiler"],
+            f"-std={cpp['standard']}",
+            *cpp["compile_flags"],
+            # Local library include paths are omitted for the expanded bundle too.
+            "-x",
+            "c++",
+            "-E",
+            "-",
+        ],
+        cwd=config.root,
+        input=f"#if __has_include(<{header}>)\nKPRO_HEADER_AVAILABLE\n#endif\n",
+        capture_output=True,
+    )
+    return "KPRO_HEADER_AVAILABLE" in result.stdout.splitlines()
+
+
 def compile_cpp(
     config: Config,
     source: Path,

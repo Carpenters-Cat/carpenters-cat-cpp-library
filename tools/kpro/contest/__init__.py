@@ -7,6 +7,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
+from kpro.adapters.compiler import has_header
 from kpro.config import Config, read_toml
 from kpro.core import KproError, git, head, within, write_text
 
@@ -28,6 +29,26 @@ test/
 .venv/
 build/
 __pycache__/
+"""
+
+MAIN_BODY = """
+using namespace std;
+using ll = long long;
+using ull = unsigned long long;
+using ld = long double;
+using pii = pair<int, int>;
+using pll = pair<ll, ll>;
+using vi = vector<int>;
+using vll = vector<ll>;
+using vvi = vector<vi>;
+using vvll = vector<vll>;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    return 0;
+}
 """
 
 
@@ -143,6 +164,12 @@ def start(config: Config, identifier: str, backend) -> dict:
             raise KproError(
                 "Install the push guard first: git config core.hooksPath .githooks; chmod +x .githooks/pre-push"
             )
+    header = (
+        "bits/stdc++.h"
+        if has_header(config, "bits/stdc++.h")
+        else f"{config.section('bundle')['library_prefix']}utility/template.hpp"
+    )
+    main_source = f"#include <{header}>\n" + MAIN_BODY
     contest = backend.fetch_contest(identifier)
     contest_id = contest.id
     if not re.fullmatch(r"[a-z0-9_-]+", contest_id):
@@ -186,10 +213,7 @@ def start(config: Config, identifier: str, backend) -> dict:
                 seen.add(problem.id)
                 directory = staging / problem.id
                 directory.mkdir()
-                (directory / "main.cpp").write_text(
-                    "#include <iostream>\n\nint main() {\n    std::ios::sync_with_stdio(false);\n    std::cin.tie(nullptr);\n}\n",
-                    encoding="utf-8",
-                )
+                write_text(directory / "main.cpp", main_source)
                 write_text(
                     directory / "problem.toml",
                     # Only identifiers needed to submit; do not copy the judge's title.

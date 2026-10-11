@@ -139,6 +139,20 @@ active-contest override changes only the lifecycle lock, not this artifact check
 This remains a local safeguard: Git hooks can be bypassed, and files copied into
 an allowed handwritten source/note cannot be classified automatically by ownership.
 
+## Contest main template
+
+Contest start probes `<bits/stdc++.h>` with the configured compiler, standard and
+submission compile flags before creating workspace/branch/lock state. Library
+include paths are omitted, matching standalone bundled compilation.
+Available environments use it
+directly; other environments use `cp/utility/template.hpp`, a canonical umbrella
+for commonly used portable C++23 standard headers, not a complete bits clone.
+Namespace imports and common type aliases are written in main.cpp for inspection
+and editing. This extends the specification's minimal workspace template without
+changing bundling: the fallback header is expanded from base_commit, standard
+includes remain intact, and no local-header expansion or conditional library
+include support is needed. Existing contest sources and snapshots are not rewritten.
+
 ## AtCoder authentication
 
 `kpro login` extends the specification with a browser-session import. The locked
