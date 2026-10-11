@@ -1,0 +1,11 @@
+contest = "abc479"
+platform = "atcoder"
+url = "https://atcoder.jp/contests/abc479"
+base_commit = "c9e8beb7c9e229532abb398da5230ce4d4eb8ca2"
+started_at = "2026-10-11T21:20:24+09:00"
+branch = "contest/abc479"
+snapshot_tag = "contest-snapshot/abc479"
+
+[cpp]
+compiler = "g++"
+standard = "c++23"

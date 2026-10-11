@@ -1,0 +1,18 @@
+# Track solutions, handwritten notes and reproducible settings only.
+# Keep downloaded statements and other third-party material in .local/.
+*
+!*/
+!.gitignore
+!*.cpp
+!*.hpp
+!*.py
+!*.md
+!contest.toml
+!problem.toml
+tests/
+test/
+.local/
+.kpro/
+.venv/
+build/
+__pycache__/
