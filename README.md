@@ -75,8 +75,7 @@ uv run kpro contest end
 
 開始時に `HEAD` を `base_commit` として記録し、snapshot タグと contest ブランチ、
 `contests/YYYY/<id>/`、問題・サンプル・ノートを作ります。AtCoder の情報取得は
-oj-ng の `oj-api` / `oj` アダプターで行います。ログインが必要な場合は事前に
-`uv run oj login https://atcoder.jp/` を実行してください。
+oj-ng の `oj-api` / `oj` アダプターで行います。ログイン方法は下記を参照してください。
 
 Git 管理するのは自分の解答（`.cpp` / `.hpp` / `.py`）、手書きノート（`.md`）、
 再現・提出に必要な `contest.toml` / `problem.toml` と `.gitignore` です。
@@ -103,6 +102,43 @@ push hook は送信対象のコミット履歴を調べ、除外対象のコン�
 緊急解除は `KPRO_ALLOW_PUSH=1 git push`。通常は `contest end` で解除します。
 終了してもブランチ・ノート・作業ファイルは残り、自動マージしません。
 ノートの YAML front matter に `contest` / `problem` / `result` / `tags` を記録できます。
+
+### AtCoder へのログイン
+
+AtCoder のログインには Cloudflare Turnstile があり、ユーザー名・パスワードを
+HTTP で送る CUI 方式は CAPTCHA を処理できません。固定環境の `oj-ng` は Selenium
+未導入のため、通常の `oj login` は CUI 方式に切り替わります。
+Selenium を導入しても、自動操作ブラウザが Turnstile に拒否される
+[既知の報告](https://github.com/online-judge-tools/oj/issues/934) があります。
+
+普段使うブラウザでログインし、セッションを読み込む方法を推奨します。
+
+1. ブラウザで <https://atcoder.jp/login> にログインする。
+2. 開発者ツールの Application / Storage → Cookies → `https://atcoder.jp` で
+   `REVEL_SESSION` の **Value** をコピーする（HttpOnly のため `document.cookie` では取得できません）。
+3. 次のコマンドをターミナルで実行し、非表示の入力欄へ値を貼り付ける。
+
+```sh
+uv run kpro login
+uv run kpro login --check
+```
+
+Cookie はアカウントの認証情報です。チャット、コマンド引数、コミットには貼り付けないでください。
+ログイン確認が成功した場合だけ `.kpro/auth/atcoder.cookie.jar`（権限 `0600`）に保存し、
+`kpro` の情報取得・サンプル取得・提出で共通に使います。失敗時は既存のセッションを保持します。
+期限切れならブラウザで再ログインし、`kpro login` を再実行してください。
+読み込み前は従来の `oj` の標準 Cookie を引き続き利用します。
+
+GUI 自動操作を試す場合は、固定バージョンに Selenium を追加して実行できます。
+
+```sh
+uv run --with 'online-judge-tools-ng[selenium]==12.0.1' oj login --use-browser always https://atcoder.jp/
+uv run oj login --check https://atcoder.jp/
+```
+
+対応ブラウザと WebDriver が必要です。通常のブラウザだけで提出する場合は
+`uv run kpro bundle a` で生成した `build/submit.cpp` を提出ページに貼り付けられます。
+提出前に `uv run kpro test a` で同じスナップショットのソースを検証してください。
 
 ## 開発と仕様
 

@@ -6,6 +6,7 @@ import shutil
 import sys
 
 from kpro import __version__
+from kpro.adapters.auth import login
 from kpro.adapters.compiler import compile_cpp
 from kpro.adapters.documentation import build, serve
 from kpro.adapters.judge import backend
@@ -28,6 +29,9 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--verbose", action="store_true")
     commands = result.add_subparsers(dest="command", required=True)
     commands.add_parser("doctor")
+    commands.add_parser("login", help="import an AtCoder browser session").add_argument(
+        "--check", action="store_true", help="check the current session without importing"
+    )
     lib = commands.add_parser("lib").add_subparsers(dest="action", required=True)
     new = lib.add_parser("new")
     new.add_argument("id")
@@ -116,6 +120,9 @@ def dispatch(config: Config, args: argparse.Namespace) -> int:
     match args.command:
         case "doctor":
             return 0 if doctor(config) else 1
+        case "login":
+            login(config, check=args.check)
+            print("AtCoder session verified.")
         case "lib":
             if args.action == "new":
                 for path in create(config, args.id, args.force):

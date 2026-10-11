@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
+from kpro.adapters.auth import cookie_args
 from kpro.config import Config
 from kpro.core import KproError, run
 
@@ -39,7 +40,7 @@ class OjNgBackend:
 
     def _get(self, command: str, url: str) -> dict:
         result = run(
-            ["oj-api", command, url],
+            ["oj-api", *cookie_args(self.config), command, url],
             cwd=self.config.root,
             check=False,
             capture_output=True,
@@ -52,7 +53,8 @@ class OjNgBackend:
             return data["result"]
         except (ValueError, KeyError, TypeError) as exc:
             raise KproError(
-                f"oj-api could not fetch {url}. Check URL/network or run `oj login https://atcoder.jp/`. Backend diagnostics are suppressed to protect cookies."
+                f"oj-api could not fetch {url}. Check URL/network or run `uv run kpro login` "
+                "to import a browser session. Backend diagnostics are suppressed to protect cookies."
             ) from exc
 
     def fetch_contest(self, identifier: str) -> Contest:
@@ -83,7 +85,14 @@ class OjNgBackend:
     def download_samples(self, problem: Problem, directory: Path) -> None:
         directory.mkdir(parents=True, exist_ok=True)
         run(
-            ["oj", "download", problem.url, "--directory", str(directory)],
+            [
+                "oj",
+                *cookie_args(self.config),
+                "download",
+                problem.url,
+                "--directory",
+                str(directory),
+            ],
             cwd=self.config.root,
             timeout=120,
         )
@@ -94,7 +103,7 @@ class OjNgBackend:
         test_samples(self.config, executable, directory)
 
     def submit(self, problem: Problem, source_file: Path, language: str | None = None) -> None:
-        args = ["oj", "submit", problem.url, str(source_file), "--yes"]
+        args = ["oj", *cookie_args(self.config), "submit", problem.url, str(source_file), "--yes"]
         if language:
             args += ["--language", language]
         run(args, cwd=self.config.root)

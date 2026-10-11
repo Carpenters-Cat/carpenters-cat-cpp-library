@@ -100,6 +100,24 @@ active-contest override changes only the lifecycle lock, not this artifact check
 This remains a local safeguard: Git hooks can be bypassed, and files copied into
 an allowed handwritten source/note cannot be classified automatically by ownership.
 
+## AtCoder authentication
+
+`kpro login` extends the specification with a browser-session import. The locked
+oj-ng 12.0.1/API client 10.12.0 password login does not solve Turnstile and Selenium
+is not a default dependency. On 2026-10-11, an unauthenticated GET of AtCoder's
+login page returned HTTP 200 and included a Turnstile marker. This diagnoses the
+unsupported CAPTCHA flow, not an account-specific password or session failure.
+The normal browser handles login/CAPTCHA; kpro reads REVEL_SESSION with getpass,
+creates an LWP cookie jar through the Python standard library and verifies it via
+`oj --cookie <temporary-file> login --check`. No backend internal APIs are imported
+and no cookie value is passed in process arguments or printed in diagnostics.
+Only a successful check replaces the repository-local private jar under `.kpro/`.
+Both oj and oj-api receive that same jar; without it their default session remains
+available. Authentication tests fake the network/backend and never use real credentials.
+
+References: [oj-ng package](https://pypi.org/project/online-judge-tools-ng/),
+[upstream Selenium/Turnstile issue](https://github.com/online-judge-tools/oj/issues/934).
+
 ## Shortest-path distance arithmetic
 
 The shortest-path entries use GCC/Clang's `__int128_t` for temporary integer
