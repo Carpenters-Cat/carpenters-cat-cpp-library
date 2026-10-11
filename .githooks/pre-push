@@ -2,18 +2,81 @@
 # Independent of Python and installed dependencies: guard works during outages.
 lock=$(git rev-parse --git-path kpro/contest-lock.toml) || exit 1
 if [ -f "$lock" ]; then
+    allow_push=0
     while IFS= read -r line; do
         case "$line" in
-            'disable_push = false') exit 0 ;;
+            'disable_push = false') allow_push=1 ;;
         esac
     done < "$lock"
     if [ "${KPRO_ALLOW_PUSH:-}" = "1" ]; then
         echo 'WARNING: KPRO_ALLOW_PUSH=1 overrides the active contest push lock.' >&2
-        exit 0
+        allow_push=1
     fi
-    echo 'ERROR: kpro contest mode is active.' >&2
-    cat "$lock" >&2
-    echo 'Push is disabled. Run `kpro contest end` after the contest.' >&2
-    exit 1
+    if [ "$allow_push" != 1 ]; then
+        echo 'ERROR: kpro contest mode is active.' >&2
+        cat "$lock" >&2
+        echo 'Push is disabled. Run `kpro contest end` after the contest.' >&2
+        exit 1
+    fi
 fi
+
+# Check every outgoing commit, including artifacts deleted in a later commit.
+# This also catches `git add -f` and pushes of a branch that is not checked out.
+check_workspace() {
+    git -c core.quotepath=false ls-tree -r --name-only "$1" -- "$2/" |
+    while IFS= read -r path; do
+        relative=${path#"$2/"}
+        case "/$relative/" in
+            */tests/*|*/test/*|*/.local/*|*/.kpro/*|*/.venv/*|*/build/*|*/__pycache__/*)
+                allowed=0 ;;
+            *)
+                case "${path##*/}" in
+                    .gitignore|.gitkeep|contest.toml|problem.toml|*.cpp|*.hpp|*.py|*.md)
+                        allowed=1 ;;
+                    *) allowed=0 ;;
+                esac ;;
+        esac
+        if [ "$allowed" = 0 ]; then
+            echo "ERROR: outgoing contest commit $1 contains local-only files:" >&2
+            printf '%s\n' "$path" >&2
+            echo 'Remove downloaded artifacts from outgoing history before pushing.' >&2
+            exit 1
+        fi
+    done || return 1
+    # Honor additional local ignore rules as well as the built-in allowlist.
+    ignored=$(git ls-tree -r --name-only "$1" -- "$2/" |
+        git check-ignore --no-index --stdin)
+    status=$?
+    if [ "$status" -gt 1 ]; then
+        echo 'ERROR: cannot check outgoing contest files.' >&2
+        return 1
+    fi
+    if [ -n "$ignored" ]; then
+        echo "ERROR: outgoing contest commit $1 contains local-only files:" >&2
+        printf '%s\n' "$ignored" >&2
+        echo 'Remove downloaded artifacts from outgoing history before pushing.' >&2
+        return 1
+    fi
+}
+
+while read -r local_ref local_oid remote_ref remote_oid; do
+    case "$local_oid" in ''|*[!0]*) ;; *) continue ;; esac
+    commit=$(git rev-parse --verify "$local_oid^{commit}" 2>/dev/null) || continue
+    if git cat-file -e "$remote_oid^{commit}" 2>/dev/null; then
+        commits=$(git rev-list "$commit" "^$remote_oid") || exit 1
+    else
+        commits=$(git rev-list "$commit") || exit 1
+    fi
+    for revision in $commits; do
+        # Also protect default-root files even without contest metadata.
+        check_workspace "$revision" contests || exit 1
+        git -c core.quotepath=false ls-tree -r --name-only "$revision" |
+        while IFS= read -r metadata; do
+            case "$metadata" in */contest.toml) ;; *) continue ;; esac
+            workspace=${metadata%/contest.toml}
+            case "$workspace" in contests/*) continue ;; esac
+            check_workspace "$revision" "$workspace" || exit 1
+        done || exit 1
+    done
+done
 exit 0

@@ -64,11 +64,11 @@ def test_samples(config: Config, executable: Path, directory: Path) -> None:
 
 def problem_data(source: Path) -> Problem:
     data = read_toml(source.parent / "problem.toml")
-    if set(data) != {"id", "title", "url"} or not all(
+    if set(data) not in ({"id", "url"}, {"id", "title", "url"}) or not all(
         isinstance(value, str) and value for value in data.values()
     ):
-        raise KproError("problem.toml must contain nonempty id, title, url strings.")
-    return Problem(**data)
+        raise KproError("problem.toml must contain nonempty id, url strings (title is optional).")
+    return Problem(data["id"], data.get("title", data["id"]), data["url"])
 
 
 def compile_problem(config: Config, problem: str) -> tuple[Path, Path]:

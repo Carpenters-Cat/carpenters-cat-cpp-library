@@ -10,6 +10,26 @@ from pathlib import Path
 from kpro.config import Config, read_toml
 from kpro.core import KproError, git, head, within, write_text
 
+CONTEST_GITIGNORE = """# Track solutions, handwritten notes and reproducible settings only.
+# Keep downloaded statements and other third-party material in .local/.
+*
+!*/
+!.gitignore
+!*.cpp
+!*.hpp
+!*.py
+!*.md
+!contest.toml
+!problem.toml
+tests/
+test/
+.local/
+.kpro/
+.venv/
+build/
+__pycache__/
+"""
+
 
 def toml_text(data: dict) -> str:
     # This subset covers contest/lock metadata without a TOML writer dependency.
@@ -154,6 +174,7 @@ def start(config: Config, identifier: str, backend) -> dict:
     try:
         with tempfile.TemporaryDirectory(prefix=".kpro-contest-", dir=root / ".kpro") as folder:
             staging = Path(folder)
+            write_text(staging / ".gitignore", CONTEST_GITIGNORE)
             if not contest.problems:
                 raise KproError(
                     "Judge returned no problems; check the contest URL or login with oj."
@@ -171,7 +192,8 @@ def start(config: Config, identifier: str, backend) -> dict:
                 )
                 write_text(
                     directory / "problem.toml",
-                    toml_text({"id": problem.id, "title": problem.title, "url": problem.url}),
+                    # Only identifiers needed to submit; do not copy the judge's title.
+                    toml_text({"id": problem.id, "url": problem.url}),
                 )
                 backend.download_samples(problem, directory / "tests")
             write_text(staging / "contest.toml", toml_text(metadata))

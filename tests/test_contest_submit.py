@@ -1,7 +1,7 @@
 import pytest
 from kpro.config import Config
 from kpro.contest import active, end, locate_problem, lock_path, start, validate_metadata
-from kpro.contest.runner import compile_problem, submit
+from kpro.contest.runner import compile_problem, problem_data, submit
 from kpro.contest.runner import test_samples as run_samples
 from kpro.core import KproError, git, head, run, write_text
 
@@ -34,6 +34,44 @@ def test_dirty_start_never_calls_judge(repository, judge):
         start(repository, "abc999", judge)
     assert git(repository.root, "branch", "--show-current") == "main"
     assert not lock_path(repository).exists()
+
+
+@pytest.mark.parametrize("custom_root", [False, True])
+def test_contest_git_add_keeps_only_authored_files_and_settings(repository, judge, custom_root):
+    if custom_root:
+        repository = Config(
+            repository.root,
+            repository.values
+            | {"project": repository.section("project") | {"contest_root": "practice"}},
+        )
+    _, directory = begin(repository, judge)
+    write_text(directory / ".local/statement.md", "Downloaded statement")
+    write_text(directory / "statement.html", "Downloaded HTML")
+    write_text(directory / "tests/generated.md", "Downloaded explanation")
+    write_text(directory / "notes.md", "My observations")
+    write_text(directory / "solution.py", "print(42)")
+    git(repository.root, "add", ".")
+    tracked = set(git(repository.root, "ls-files", "--", str(directory.parent)).splitlines())
+    prefix = directory.parent.relative_to(repository.root).as_posix()
+    assert tracked == {
+        f"{prefix}/.gitignore",
+        f"{prefix}/contest.toml",
+        f"{prefix}/notes.md",
+        f"{prefix}/a/main.cpp",
+        f"{prefix}/a/notes.md",
+        f"{prefix}/a/solution.py",
+        f"{prefix}/a/problem.toml",
+    }
+    assert "title" not in (directory / "problem.toml").read_text()
+    assert problem_data(directory / "main.cpp").title == "a"
+    assert (directory / "tests/sample-1.out").read_text() == "42\n"
+
+
+def test_legacy_problem_title_remains_readable(repository, judge):
+    _, directory = begin(repository, judge)
+    path = directory / "problem.toml"
+    write_text(path, path.read_text() + 'title = "Legacy title"\n')
+    assert problem_data(directory / "main.cpp").title == "Legacy title"
 
 
 def test_explicit_push_policy_keeps_contest_lifecycle(repository, judge):
@@ -80,6 +118,100 @@ def test_push_guard(repository, judge, tmp_path):
     assert "contest mode is active" in result.stderr
     end(repository)
     git(repository.root, "push", "test", "HEAD:refs/heads/contest")
+
+
+@pytest.mark.parametrize("delete_later", [False, True])
+@pytest.mark.parametrize("override", [False, True])
+@pytest.mark.parametrize("contest_root", ["contests", "practice sessions"])
+def test_push_guard_rejects_force_added_samples_in_outgoing_history(
+    repository, judge, tmp_path, delete_later, override, contest_root, monkeypatch
+):
+    repository = Config(
+        repository.root,
+        repository.values
+        | {"project": repository.section("project") | {"contest_root": contest_root}},
+    )
+    remote = tmp_path / "remote.git"
+    git(repository.root, "init", "--bare", str(remote))
+    git(repository.root, "remote", "add", "test", str(remote))
+    git(repository.root, "push", "test", "HEAD:refs/heads/main")
+    _, directory = begin(repository, judge)
+    if override:
+        monkeypatch.setenv("KPRO_ALLOW_PUSH", "1")
+    else:
+        end(repository)
+    git(repository.root, "add", ".")
+    git(repository.root, "add", "-f", str(directory / "tests/sample-1.in"))
+    git(repository.root, "commit", "-m", "Test accidental sample commit")
+    if delete_later:
+        git(repository.root, "rm", str(directory / "tests/sample-1.in"))
+        git(repository.root, "commit", "-m", "Test sample deletion")
+    result = run(
+        ["git", "push", "test", "HEAD:refs/heads/contest"],
+        cwd=repository.root,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode != 0
+    assert "local-only files" in result.stderr
+    assert "sample-1.in" in result.stderr
+    assert not git(remote, "show-ref", "refs/heads/contest", check=False)
+
+
+def test_push_guard_rejects_samples_without_metadata(repository, tmp_path):
+    remote = tmp_path / "remote.git"
+    git(repository.root, "init", "--bare", str(remote))
+    git(repository.root, "remote", "add", "test", str(remote))
+    path = repository.path("contest_root") / "2026/old/a/tests/sample.in"
+    write_text(path, "downloaded sample")
+    git(repository.root, "add", "-f", str(path))
+    git(repository.root, "commit", "-m", "Test sample without contest metadata")
+    result = run(
+        ["git", "push", "test", "HEAD:refs/heads/contest"],
+        cwd=repository.root,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode != 0
+    assert "sample.in" in result.stderr
+
+
+def test_push_guard_checks_contest_branch_when_main_is_checked_out(repository, judge, tmp_path):
+    config = Config(
+        repository.root,
+        repository.values
+        | {"project": repository.section("project") | {"contest_root": "practice sessions"}},
+    )
+    remote = tmp_path / "remote.git"
+    git(config.root, "init", "--bare", str(remote))
+    git(config.root, "remote", "add", "test", str(remote))
+    _, directory = begin(config, judge)
+    end(config)
+    git(config.root, "add", ".")
+    git(config.root, "add", "-f", str(directory / "tests/sample-1.in"))
+    git(config.root, "commit", "-m", "Test sample on another branch")
+    git(config.root, "switch", "main")
+    assert not (directory.parent / ".gitignore").exists()
+    result = run(
+        ["git", "push", "test", "contest/abc999:refs/heads/contest"],
+        cwd=config.root,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode != 0
+    assert "sample-1.in" in result.stderr
+
+
+def test_push_guard_accepts_solution_commit(repository, judge, tmp_path):
+    remote = tmp_path / "remote.git"
+    git(repository.root, "init", "--bare", str(remote))
+    git(repository.root, "remote", "add", "test", str(remote))
+    _, directory = begin(repository, judge)
+    end(repository)
+    git(repository.root, "add", ".")
+    git(repository.root, "commit", "-m", "Test authored solution commit")
+    git(repository.root, "push", "test", "HEAD:refs/heads/contest")
+    assert git(remote, "rev-parse", "refs/heads/contest") == head(repository.root)
 
 
 @pytest.mark.parametrize("broken", ["bundle", "compile", "sample", "missing-samples"])

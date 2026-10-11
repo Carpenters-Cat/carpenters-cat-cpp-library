@@ -54,6 +54,7 @@ def repository(tmp_path):
     ):
         (root / name).mkdir(parents=True, exist_ok=True)
     shutil.copy(PROJECT / "docs/tags.toml", root / "docs/tags.toml")
+    shutil.copy(PROJECT / "contests/.gitignore", root / "contests/.gitignore")
     write_text(root / "docs/index.md", "# Test library\n")
     write_text(root / "include/cp/graph/b.hpp", "#pragma once\ninline constexpr int answer = 42;\n")
     write_text(

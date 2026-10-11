@@ -85,6 +85,21 @@ a normal local tag, not a cryptographic attestation.
 The CLI does not create commits in the user's repository. Contest lifecycle
 integration tests create and commit isolated temporary repositories instead.
 
+## Contest publication
+
+Contest workspaces use a Git allowlist for solution sources, handwritten Markdown
+and the minimal snapshot/submission settings. Samples, build artifacts and a
+reserved `.local/` directory for downloaded statements remain local. The default
+contest root has a versioned allowlist; start writes one for each workspace too,
+including configured alternative roots. Problem metadata now stores only id/url;
+the reader accepts older id/title/url metadata for compatibility. This deliberately
+omits copied problem titles while preserving the snapshot and submission workflow.
+The shell push guard checks all outgoing commits for ignored contest files, so a
+force-added sample cannot be published even if deleted in a later commit. The
+active-contest override changes only the lifecycle lock, not this artifact check.
+This remains a local safeguard: Git hooks can be bypassed, and files copied into
+an allowed handwritten source/note cannot be classified automatically by ownership.
+
 ## Shortest-path distance arithmetic
 
 The shortest-path entries use GCC/Clang's `__int128_t` for temporary integer
