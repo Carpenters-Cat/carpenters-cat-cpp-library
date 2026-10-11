@@ -1,29 +1,16 @@
 from __future__ import annotations
 
 import json
-import re
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
+from urllib.parse import urlsplit
 
 from kpro.adapters.auth import cookie_args
+from kpro.adapters.judge_sites import SITES, resolve_contest, resolve_problem
+from kpro.adapters.judge_sites import Contest as Contest
+from kpro.adapters.judge_sites import Problem as Problem
 from kpro.config import Config
 from kpro.core import KproError, run
-
-
-@dataclass(frozen=True)
-class Problem:
-    id: str
-    title: str
-    url: str
-
-
-@dataclass(frozen=True)
-class Contest:
-    id: str
-    platform: str
-    url: str
-    problems: list[Problem]
 
 
 class JudgeBackend(Protocol):
@@ -31,6 +18,7 @@ class JudgeBackend(Protocol):
     def fetch_problem(self, url: str) -> Problem: ...
     def download_samples(self, problem: Problem, directory: Path) -> None: ...
     def test(self, problem: Problem, executable: Path, directory: Path) -> None: ...
+    def supports_submission(self, problem: Problem) -> bool: ...
     def submit(self, problem: Problem, source_file: Path, language: str | None = None) -> None: ...
 
 
@@ -40,7 +28,7 @@ class OjNgBackend:
 
     def _get(self, command: str, url: str) -> dict:
         result = run(
-            ["oj-api", *cookie_args(self.config), command, url],
+            ["oj-api", *cookie_args(self.config, url), command, url],
             cwd=self.config.root,
             check=False,
             capture_output=True,
@@ -52,44 +40,32 @@ class OjNgBackend:
                 raise ValueError("backend failed")
             return data["result"]
         except (ValueError, KeyError, TypeError) as exc:
+            hint = (
+                "Run `uv run kpro login` to import an AtCoder browser session."
+                if urlsplit(url).hostname == "atcoder.jp"
+                else "Check the URL/network and your oj login session."
+            )
             raise KproError(
-                f"oj-api could not fetch {url}. Check URL/network or run `uv run kpro login` "
-                "to import a browser session. Backend diagnostics are suppressed to protect cookies."
+                f"oj-api could not fetch {url}. {hint} Backend diagnostics are suppressed to protect cookies."
             ) from exc
 
     def fetch_contest(self, identifier: str) -> Contest:
-        match = re.fullmatch(r"(?:https://atcoder\.jp/contests/)?([a-z0-9_-]+)/?", identifier)
-        if not match:
-            raise KproError("Use an AtCoder contest id or https://atcoder.jp/contests/<id>.")
-        contest_id = match[1]
-        url = f"https://atcoder.jp/contests/{contest_id}"
-        data = self._get("get-contest", url)
-        try:
-            problems = [
-                Problem(item["context"]["alphabet"].lower(), item["name"], item["url"])
-                for item in data["problems"]
-            ]
-        except (KeyError, TypeError, AttributeError) as exc:
-            raise KproError(
-                "Unexpected oj-api contest metadata. Check installed online-judge-api-client-ng version."
-            ) from exc
-        return Contest(contest_id, "atcoder", url, problems)
+        reference = resolve_contest(identifier)
+        return SITES[reference.platform].fetch_contest(reference, self._get)
 
     def fetch_problem(self, url: str) -> Problem:
-        data = self._get("get-problem", url)
-        try:
-            return Problem(data["context"]["alphabet"].lower(), data["name"], data["url"])
-        except (KeyError, TypeError, AttributeError) as exc:
-            raise KproError("Unexpected oj-api problem metadata.") from exc
+        reference = resolve_problem(url)
+        return SITES[reference.platform].fetch_problem(reference, self._get)
 
     def download_samples(self, problem: Problem, directory: Path) -> None:
+        reference = resolve_problem(problem.url)
         directory.mkdir(parents=True, exist_ok=True)
         run(
             [
                 "oj",
-                *cookie_args(self.config),
+                *cookie_args(self.config, reference.url),
                 "download",
-                problem.url,
+                reference.url,
                 "--directory",
                 str(directory),
             ],
@@ -102,8 +78,23 @@ class OjNgBackend:
 
         test_samples(self.config, executable, directory)
 
+    def supports_submission(self, problem: Problem) -> bool:
+        return SITES[resolve_problem(problem.url).platform].supports_submission
+
     def submit(self, problem: Problem, source_file: Path, language: str | None = None) -> None:
-        args = ["oj", *cookie_args(self.config), "submit", problem.url, str(source_file), "--yes"]
+        reference = resolve_problem(problem.url)
+        if not self.supports_submission(problem):
+            raise KproError(
+                "Automatic submission to Codeforces is unavailable. Use `kpro bundle` and submit the generated source in your browser."
+            )
+        args = [
+            "oj",
+            *cookie_args(self.config, reference.url),
+            "submit",
+            reference.url,
+            str(source_file),
+            "--yes",
+        ]
         if language:
             args += ["--language", language]
         run(args, cwd=self.config.root)

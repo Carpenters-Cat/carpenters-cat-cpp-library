@@ -74,12 +74,44 @@ uv run kpro contest end
 ```
 
 開始時に `HEAD` を `base_commit` として記録し、snapshot タグと contest ブランチ、
-`contests/YYYY/<id>/`、問題・サンプル・ノートを作ります。AtCoder の情報取得は
-oj-ng の `oj-api` / `oj` アダプターで行います。ログイン方法は下記を参照してください。
+`contests/YYYY/<id>/`、問題・サンプル・ノートを作ります。
+AtCoder・Codeforces・yukicoder の URL に対応しています。AtCoder は `abc350` のような
+ID 単独でも指定でき、他サイトは `codeforces:1234` / `yukicoder:1` と明示します。
+数字だけの指定はサイトを判別できないためエラーになります。
+
+| サイト | 問題一覧・サンプル取得 | 自動提出 | 内部 ID の例 |
+| --- | --- | --- | --- |
+| AtCoder | 対応 | 対応 | `abc350` |
+| Codeforces | 通常の公開コンテスト・順位表が公開されているもの | 未対応（ブラウザから提出） | `codeforces-1234` |
+| yukicoder | 対応 | `oj` のログインが必要 | `yukicoder-1` |
+
+```sh
+uv run kpro contest start https://codeforces.com/contest/1234
+# または: uv run kpro contest start codeforces:1234
+# yukicoder: uv run kpro contest start https://yukicoder.me/contests/1
+uv run kpro test b1
+uv run kpro bundle b1
+# 表示された build/submit.cpp をブラウザから提出
+uv run kpro contest end
+```
+
+Codeforces の `B1` / `B2` は `b1` / `b2` と別々に保存します。
+他サイトの数値 ID はサイト名を付けて保存先・ブランチ・snapshot タグの衝突を防ぎます。
+Codeforces の Gym・group・非公開コンテストには対応していません。
+問題一覧は [Codeforces の公式 API](https://codeforces.com/apiHelp/methods#contest.standings)、
+AtCoder・yukicoder の問題一覧と全サイトのサンプル取得は `oj-api` / `oj` を使います。
+Codeforces の `submit` は `--force` を指定しても自動提出せず、bundle の生成方法を案内します。
+
+標準入出力の通常問題を対象とし、比較はトークン一致です。対話型・専用チェッカー・
+誤差判定が必要な問題の正しさは、このサンプルテストでは確認できません。
+サンプルが取得できない、または空の場合をテスト成功にはしません。
+取得コマンドが失敗した場合は開始を中断し、作成途中のブランチ・タグ・作業ディレクトリを
+取り消します。特殊形式の問題を含むコンテストは、全問題のサンプルを取得できず開始できない
+場合があります。
 
 Git 管理するのは自分の解答（`.cpp` / `.hpp` / `.py`）、手書きノート（`.md`）、
 再現・提出に必要な `contest.toml` / `problem.toml` と `.gitignore` です。
-問題設定には ID と URL のみを保存し、AtCoder の問題タイトルはコピーしません。
+問題設定には ID と URL のみを保存し、取得した問題タイトルはコピーしません。
 サンプルの `tests/` / `test/`、ビルド結果、その他の形式は Git から除外します。
 問題文などの取得データは、Markdown でも各作業ディレクトリの `.local/` に置いてください。
 コンテスト開始時にも除外設定を生成するため、`project.contest_root` を変更しても有効です。
@@ -128,6 +160,8 @@ Cookie はアカウントの認証情報です。チャット、コマンド引�
 `kpro` の情報取得・サンプル取得・提出で共通に使います。失敗時は既存のセッションを保持します。
 期限切れならブラウザで再ログインし、`kpro login` を再実行してください。
 読み込み前は従来の `oj` の標準 Cookie を引き続き利用します。
+このリポジトリ内の Cookie は AtCoder 専用です。Codeforces・yukicoder では
+`oj` の標準 Cookie を使い、Codeforces の公式 API には Cookie を送りません。
 
 GUI 自動操作を試す場合は、固定バージョンに Selenium を追加して実行できます。
 
@@ -139,6 +173,23 @@ uv run oj login --check https://atcoder.jp/
 対応ブラウザと WebDriver が必要です。通常のブラウザだけで提出する場合は
 `uv run kpro bundle a` で生成した `build/submit.cpp` を提出ページに貼り付けられます。
 提出前に `uv run kpro test a` で同じスナップショットのソースを検証してください。
+
+### yukicoder へのログイン・提出
+
+`kpro login` は AtCoder 専用です。yukicoder は `oj` でセッションを作成・確認してください。
+ブラウザを使う場合は Selenium と対応する WebDriver が必要です。
+
+```sh
+uv run --with 'online-judge-tools-ng[selenium]==12.0.1' oj login --use-browser always https://yukicoder.me/
+uv run oj login --check https://yukicoder.me/
+uv run kpro contest start yukicoder:1
+uv run kpro submit a --language <yukicoder-language-id>
+uv run kpro contest end
+```
+
+言語 ID はサイト固有です。必要なら対象問題について
+`uv run oj-api get-problem --full <problem-url>` の `availableLanguages` を確認してください。
+実際の提出には、bundle したソースのコンパイルと保存サンプルのテスト成功が必要です。
 
 ## 開発と仕様
 

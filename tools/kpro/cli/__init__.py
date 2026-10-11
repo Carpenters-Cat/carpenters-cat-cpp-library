@@ -45,7 +45,9 @@ def parser() -> argparse.ArgumentParser:
     docs.add_argument("--port", type=int)
     commands.add_parser("search").add_argument("query")
     contest = commands.add_parser("contest").add_subparsers(dest="action", required=True)
-    contest.add_parser("start").add_argument("identifier")
+    contest.add_parser("start").add_argument(
+        "identifier", help="contest URL, AtCoder id, codeforces:<id> or yukicoder:<id>"
+    )
     contest.add_parser("status")
     contest.add_parser("end")
     for name in ("run", "test", "bundle", "submit"):

@@ -85,6 +85,45 @@ a normal local tag, not a cryptographic attestation.
 The CLI does not create commits in the user's repository. Contest lifecycle
 integration tests create and commit isolated temporary repositories instead.
 
+## Multiple judge sites
+
+`judge.backend = "oj-ng"` remains the common transport selection. Site adapters in
+`tools/kpro/adapters/judge_sites.py` resolve URLs and explicit `site:id` identifiers,
+normalize metadata into the same Contest/Problem models and declare submission
+support. Existing AtCoder workspace ids remain unchanged; Codeforces and
+yukicoder numeric ids are prefixed with the full site name to prevent workspace,
+branch and snapshot-tag collisions. Bare numeric contest ids are rejected.
+
+AtCoder and yukicoder contest metadata use the documented `oj-api get-contest`
+JSON protocol. Standalone yukicoder metadata may omit both title and alphabet;
+URL-derived `no-<number>` and `id-<id>` identifiers distinguish `/problems/no/<number>`
+from `/problems/<id>` (the latter is the internal ProblemId, not the public number).
+Downloaded titles remain transient, following the contest publication policy.
+
+Codeforces contest metadata uses its anonymous official `contest.standings` API
+with only `contestId`, as required by the current
+[API documentation](https://codeforces.com/apiHelp/methods#contest.standings).
+The locked api-client-ng 10.12.0 instead sends `from=1&count=1`, so reusing that
+metadata command would conflict with the current public API contract. This small
+official API integration stays inside the adapter; samples still use `oj download`.
+Only public regular contests with visible standings are supported. Gym, groups
+and private contests require separate authentication/workflows and are outside
+this implementation. B1/B2 retain distinct local ids b1/b2.
+
+The locked backend has removed Codeforces submission. Both the runner and adapter
+reject automatic submission, including `--force`, and direct the user to bundle
+and submit through the browser. AtCoder/yukicoder submission retains the exact
+snapshot bundle compile/sample gate. Real submission is never used in tests.
+The repository-local AtCoder cookie jar is used only for AtCoder operations;
+other sites retain oj's standard sessions, and the Codeforces metadata API sends
+no cookies or authentication parameters. `kpro login` remains AtCoder-specific.
+
+Local sample comparison remains whitespace-token equality for standard-input /
+standard-output problems; interactive problems, special checkers and floating
+point tolerance are not implemented. Unavailable/missing samples do not produce
+a successful test result. Contest locks, push guards and snapshot semantics are
+shared by all three sites.
+
 ## Contest publication
 
 Contest workspaces use a Git allowlist for solution sources, handwritten Markdown

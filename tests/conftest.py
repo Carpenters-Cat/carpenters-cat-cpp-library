@@ -34,6 +34,9 @@ class FakeJudge:
     def submit(self, problem, source_file, language=None):
         self.submissions.append((problem, source_file.read_text(), language))
 
+    def supports_submission(self, problem):
+        return True
+
 
 @pytest.fixture
 def repository(tmp_path):

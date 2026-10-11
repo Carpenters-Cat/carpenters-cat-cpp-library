@@ -94,6 +94,12 @@ def submit(
     config: Config, problem: str, backend, *, force: bool = False, language: str | None = None
 ) -> Path:
     source, metadata = locate_problem(config, problem)
+    data = problem_data(source)
+    if not backend.supports_submission(data):
+        raise KproError(
+            f"Automatic submission is unavailable for {data.url}. "
+            f"Run `kpro bundle {problem}` and submit the generated build/submit.cpp in your browser."
+        )
     bundled = bundle_file(config, source, metadata)
     # A compile/bundle failure cannot produce a usable submission, even with --force.
     executable = compile_cpp(
@@ -108,5 +114,5 @@ def submit(
         if not force:
             raise
         print("WARNING: --force bypasses failed/missing samples.")
-    backend.submit(problem_data(source), bundled, language)
+    backend.submit(data, bundled, language)
     return bundled

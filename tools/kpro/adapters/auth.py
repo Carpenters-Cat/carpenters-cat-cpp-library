@@ -6,6 +6,7 @@ import os
 import tempfile
 import warnings
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from kpro.config import Config
 from kpro.core import KproError, run
@@ -17,7 +18,9 @@ def cookie_path(config: Config) -> Path:
     return config.root / ".kpro" / "auth" / "atcoder.cookie.jar"
 
 
-def cookie_args(config: Config) -> list[str]:
+def cookie_args(config: Config, url: str = ATCODER_URL) -> list[str]:
+    if urlsplit(url).hostname != "atcoder.jp":
+        return []
     path = cookie_path(config)
     # Preserve existing oj login sessions until a repository-local session is imported.
     return ["--cookie", str(path)] if path.is_file() else []
