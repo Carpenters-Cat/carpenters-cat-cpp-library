@@ -101,7 +101,7 @@ int main() {
             int i;
             cin >> i;
             i--;
-            cout << lg.max_right(i, [](S3 x) {return x[0].smax <= 0;}) + 1 << endl;
+            cout << lg.max_right(i, [](S3 x) {return x[0].mx[0] <= 0;}) + 1 << endl;
         }
     }
 
