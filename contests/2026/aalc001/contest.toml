@@ -1,0 +1,11 @@
+contest = "aalc001"
+platform = "atcoder"
+url = "https://atcoder.jp/contests/aalc001"
+base_commit = "c32e1cc8b3fee57a39f34fe3141c6be674d65d4f"
+started_at = "2026-10-12T15:07:51+09:00"
+branch = "contest/aalc001"
+snapshot_tag = "contest-snapshot/aalc001"
+
+[cpp]
+compiler = "g++"
+standard = "c++23"
