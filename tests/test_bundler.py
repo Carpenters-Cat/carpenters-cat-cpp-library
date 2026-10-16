@@ -1,7 +1,7 @@
 import pytest
 from kpro.adapters.compiler import compile_cpp
 from kpro.bundler import directives, expand, provenance
-from kpro.core import KproError, head, write_text
+from kpro.core import KproError, git, head, write_text
 
 
 def solution(config, text):
@@ -76,6 +76,61 @@ def test_provenance_has_exact_files_and_no_timestamp():
     assert "a" * 40 in result
     assert "2026" not in result
     assert "AI" not in result
+
+
+def test_bundle_reads_current_origin_url(repository):
+    source = solution(repository, "int main() {}\n")
+    assert "Repository:" not in expand(repository, source).text
+
+    git(repository.root, "remote", "add", "origin", "git@example.com:owner/library.git")
+    first = expand(repository, source, commit=head(repository.root))
+    assert " * Repository: https://example.com/owner/library\n" in first.text.split(" */")[0]
+    assert expand(repository, source, commit=head(repository.root)).text == first.text
+
+    git(repository.root, "remote", "set-url", "origin", "https://example.com/fork/library.git")
+    second = expand(repository, source)
+    assert " * Repository: https://example.com/fork/library\n" in second.text
+    assert "https://example.com/owner/library" not in second.text
+
+    repository.section("bundle")["emit_provenance_comment"] = False
+    assert expand(repository, source).text == "int main() {}\n"
+
+
+@pytest.mark.parametrize(
+    ("remote_url", "expected"),
+    [
+        ("git@example.com:owner/library.git", "https://example.com/owner/library"),
+        ("ssh://git@example.com:2222/owner/library.git", "https://example.com/owner/library"),
+        ("https://example.com/owner/library.git/", "https://example.com/owner/library"),
+        ("http://example.com/owner/library", "https://example.com/owner/library"),
+        ("git://example.com/owner/library.git", "https://example.com/owner/library"),
+        ("https://user:secret@example.com/owner/library.git", "https://example.com/owner/library"),
+        ("https://example.com:8443/owner/library.git", "https://example.com:8443/owner/library"),
+        ("/local/library.git", None),
+        ("file:///local/library.git", None),
+        ("https://example.com", None),
+        ("https://[invalid/owner/library.git", None),
+    ],
+)
+def test_bundle_emits_https_repository_link(repository, remote_url, expected):
+    git(repository.root, "remote", "add", "origin", remote_url)
+    result = expand(repository, solution(repository, "int main() {}\n"))
+    if expected is None:
+        assert "Repository:" not in result.text
+    else:
+        assert f" * Repository: {expected}\n" in result.text
+        assert "secret" not in result.text
+
+
+def test_remote_url_cannot_escape_provenance_comment(repository):
+    remote_url = "https://example.com/owner/*/\n#error injected\n/*"
+    git(repository.root, "remote", "add", "origin", remote_url)
+    result = expand(repository, solution(repository, "int main() {}\n"))
+    assert result.text.count(" */") == 1
+    assert "\n#error" not in result.text
+    bundled = repository.root / "build/submit.cpp"
+    write_text(bundled, result.text)
+    compile_cpp(repository, bundled, bundled.parent / "submit", include_library=False)
 
 
 def test_conditional_library_include_is_rejected(repository):

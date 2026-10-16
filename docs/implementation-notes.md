@@ -47,6 +47,16 @@ semantics. Keep canonical library dependencies unconditional. General C++
 preprocessing remains outside the MVP scope. Comments and raw strings are not
 interpreted as directives.
 
+The bundle's provenance comment includes the current `origin` remote URL,
+queried through the existing Git wrapper at bundle time without network access.
+SSH, Git and HTTP(S) remotes become HTTPS links without the trailing `.git`.
+Credentials, query strings and fragments are omitted; SSH ports are not reused
+as HTTPS ports. When `origin` is absent or is a local/unsupported remote, the line
+is omitted.
+Line breaks and comment terminators are neutralized before embedding the URL in
+C++. The URL identifies the configured remote, while `base_commit` continues to
+select the immutable library snapshot.
+
 `run` and `test` compile the same snapshot bundle as `submit`. This extends the
 specification's local compile workflow so local samples cannot accidentally test
 a modified working-tree library while submission uses the contest snapshot.
